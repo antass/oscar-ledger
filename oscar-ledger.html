@@ -206,6 +206,10 @@ h3.sub { font: 600 17px/1.2 var(--display); margin: 22px 0 10px; }
 .tier.alt { border: 1px solid var(--line); color: var(--muted); }
 .tier.bubble { border: 1px dashed var(--line); color: var(--muted); }
 .crow.seen .film-link { color: var(--muted); }
+.races-h { font: italic 600 30px/1.1 var(--display); margin: 36px 0 6px; }
+.races-p { color: var(--muted); margin: 0 0 16px; max-width: 62ch; }
+.mix { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 14px 0 4px; border-top: 1px solid var(--line); }
+.nom .tier { margin-left: 8px; vertical-align: 2px; }
 footer.note { margin-top: 40px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
 
 @media (max-width: 760px) {
@@ -283,6 +287,9 @@ footer.note { margin-top: 40px; color: var(--muted); font-size: 12.5px; border-t
       </div>
       <div class="panel" id="countdown"></div>
     </div>
+    <h2 class="races-h">Acting races</h2>
+    <p class="races-p">Five likely nominees per category, then the performances close behind. Ticking a performance marks its film as seen.</p>
+    <div class="cats" id="races"></div>
   </section>
 
   <footer class="note" id="footnote"></footer>
@@ -531,7 +538,7 @@ const F99 = {
   c_invite:{t:"The Invite",d:"Olivia Wilde",dist:"A24",k:"feature",h:12,r:7,dr:6,tier:"likely"},
   c_sudden:{t:"All of a Sudden",d:"Ryusuke Hamaguchi",dist:"NEON",k:"feature",h:180,r:8,dr:5,tier:"likely"},
   c_hailmary:{t:"Project Hail Mary",d:"Phil Lord, Christopher Miller",dist:"Amazon MGM",k:"feature",h:44,r:9,tier:"likely",fam:"teens",l:"Ryan Gosling as a science teacher who wakes up alone on a spaceship, from Andy Weir's novel."},
-  c_elsinore:{t:"Elsinore",d:"",dist:"Focus Features",k:"feature",h:240,r:10,tier:"likely",l:"Andrew Scott is in the Best Actor conversation."},
+  c_elsinore:{t:"Elsinore",d:"",dist:"Focus Features",k:"feature",h:240,r:10,tier:"likely",l:"Andrew Scott's performance has made him a Best Actor front-runner."},
   c_michael:{t:"Michael",d:"Antoine Fuqua",dist:"Lionsgate",k:"feature",h:280,r:11,tier:"alt",l:"The Michael Jackson biopic, starring his nephew Jaafar Jackson."},
   c_clubkid:{t:"Club Kid",d:"",dist:"A24",k:"feature",h:300,r:12,tier:"alt"},
   c_sense:{t:"Sense and Sensibility",d:"Georgia Oakley",dist:"Focus Features",k:"feature",h:110,r:13,dr:9,tier:"alt",l:"A new adaptation of Jane Austen's novel."},
@@ -539,9 +546,35 @@ const F99 = {
   c_obsession:{t:"Obsession",d:"Curry Barker",dist:"Focus Features",k:"feature",h:268,r:15,tier:"alt",l:"A horror breakout that has climbed into the Best Picture conversation."},
   c_fatherland:{t:"Fatherland",d:"Paweł Pawlikowski",k:"feature",h:220,dr:7,tier:"bubble"},
   c_digger:{t:"Digger",d:"",k:"feature",h:24,tier:"bubble",l:"Tom Cruise is a leading Best Actor contender. Early reactions have been divided."},
-  c_rocky:{t:"I Play Rocky",d:"",k:"feature",h:4,tier:"bubble"}
+  c_rocky:{t:"I Play Rocky",d:"",k:"feature",h:4,tier:"bubble",l:"Anthony Ippolito plays a young Sylvester Stallone."},
+  // Films that are only in the acting races so far
+  c_rose:{t:"Rose",d:"",dist:"MUBI",k:"feature",h:340,tier:"acting"},
+  c_heumann:{t:"Being Heumann",d:"",dist:"Apple Original Films",k:"feature",h:40,tier:"acting"},
+  c_gentle:{t:"Gentle Monster",d:"",dist:"Netflix",k:"feature",h:260,tier:"acting"},
+  c_misty:{t:"Misty Green",d:"",dist:"A24",k:"feature",h:150,tier:"acting"},
+  c_pickpocket:{t:"The Only Living Pickpocket in New York",d:"",dist:"Sony Pictures Classics",k:"feature",h:28,tier:"acting"},
+  c_ink:{t:"Ink",d:"",k:"feature",h:230,tier:"acting"},
+  c_social:{t:"The Social Reckoning",d:"",k:"feature",h:210,tier:"acting"},
+  c_hunger:{t:"The Hunger Games: Sunrise on the Reaping",d:"",k:"feature",h:18,fam:"teens",tier:"acting"}
 };
 const C99 = [];
+
+// Acting predictions: AwardsWatch ballots of Sept 17-18, 2026. [film, performer, likely?]
+// Lead Actor: the source's #4-5 were unreadable, so only its top 3 are marked likely.
+const A99 = [
+  {id:"act",n:"Actor in a Leading Role",m:[
+    ["c_elsinore","Andrew Scott",1],["c_odyssey","Matt Damon",1],["c_horse","John Malkovich",1],
+    ["c_pickpocket","John Turturro"],["c_michael","Jaafar Jackson"],["c_hailmary","Ryan Gosling"],["c_digger","Tom Cruise"],["c_behemoth","Pedro Pascal"]]},
+  {id:"acs",n:"Actress in a Leading Role",m:[
+    ["c_debut","Julianne Moore",1],["c_sudden","Virginie Efira",1],["c_fjord","Renate Reinsve",1],["c_rose","Sandra Hüller",1],["c_heumann","Ruth Madeley",1],
+    ["c_gentle","Léa Seydoux"],["c_invite","Olivia Wilde"],["c_sense","Daisy Edgar-Jones"],["c_obsession","Inde Navarrette"],["c_misty","Rosalind Eleazar"]]},
+  {id:"sac",n:"Actor in a Supporting Role",m:[
+    ["c_horse","Sam Rockwell",1],["c_debut","Paul Giamatti",1],["c_bola","Guitarricadelafuente",1],["c_michael","Colman Domingo",1],["c_odyssey","John Leguizamo",1],
+    ["c_ink","Guy Pearce"],["c_odyssey","Robert Pattinson"],["c_invite","Edward Norton"],["c_social","Jeremy Strong"],["c_digger","John Goodman"]]},
+  {id:"sas",n:"Actress in a Supporting Role",m:[
+    ["c_odyssey","Anne Hathaway",1],["c_bola","Penélope Cruz",1],["c_odyssey","Samantha Morton",1],["c_invite","Penélope Cruz",1],["c_elsinore","Olivia Colman",1],
+    ["c_sense","Esme Creed-Miles"],["c_hunger","Glenn Close"],["c_hailmary","Sandra Hüller"],["c_sudden","Tao Okamoto"],["c_horse","Mariana di Girolamo"]]}
+];
 
 const SEASONS = {
   "97": { n: "97th", eyebrow: "97th Academy Awards · films of 2024", lede: "Every film nominated at the March 2, 2025 ceremony, the year Anora took Best Picture.", films: F97, cats: C97,
@@ -549,7 +582,7 @@ const SEASONS = {
   "98": { n: "98th", eyebrow: "98th Academy Awards · films of 2025", lede: "Every film nominated at the March 15, 2026 ceremony. Tick off what you've seen, rate it, and see how your picks line up with the Academy's.", films: F98, cats: C98,
           foot: "Nominees and winners from the 98th Academy Awards (announced January 22, 2026; awarded March 15, 2026). Two films tied for Live Action Short." },
   "99": { n: "99th", eyebrow: "99th Academy Awards · films of 2026", lede: "Nominations land January 21, 2027. Until then, these are the films most likely to be in the running.", films: F99, cats: C99,
-          foot: "Contenders are predictions, not nominees. Rankings from the AwardsWatch Best Picture and Best Director ballot of September 17, 2026, plus bubble films from Gold Derby's October odds. Ask Claude to swap in the real nominees on January 21, 2027." }
+          foot: "Contenders are predictions, not nominees. Rankings from AwardsWatch's ballots of September 17–18, 2026 (Picture, Director and the four acting races), plus bubble films from Gold Derby's October odds. Ask Claude to swap in the real nominees on January 21, 2027." }
 };
 
 const NEXT = [
@@ -636,7 +669,7 @@ const STATUE = '<svg viewBox="0 0 10 24" aria-hidden="true" fill="currentColor">
 const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const KIND = { feature: "", animated: "Animated", doc: "Documentary", short: "Short" };
 const famLabel = { family: "Family night", teens: "Older kids" };
-const TIER = { likely: "Likely nominee", alt: "On the edge", bubble: "Dark horse" };
+const TIER = { likely: "Likely nominee", alt: "On the edge", bubble: "Dark horse", acting: "Acting race" };
 const today = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
 const daysTo = s => Math.round((new Date(s + "T00:00:00") - today) / 864e5);
 
@@ -767,7 +800,15 @@ function renderNext() {
     </div>
     <ol class="timeline">${NEXT.map(([d, e], i) => `<li class="${daysTo(d) < 0 ? "past" : i === nextIdx ? "next-up" : ""}">
       <span class="mono">${new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span><span>${esc(e)}</span></li>`).join("")}</ol>`;
-  const order = Object.keys(F99).sort((a, b) => (F99[a].r || 99) - (F99[b].r || 99) || (F99[a].dr || 99) - (F99[b].dr || 99));
+  const order = Object.keys(F99).filter(f => F99[f].tier !== "acting").sort((a, b) => (F99[a].r || 99) - (F99[b].r || 99) || (F99[a].dr || 99) - (F99[b].dr || 99));
+  const tickBtn = f => { const sn = seen(f); return `<button class="tick${sn ? " on" : ""}" data-tick="${f}" aria-pressed="${sn}" aria-label="Mark ${esc(FILMS[f].t)} as ${sn ? "not seen" : "seen"}">${CHECK}</button>`; };
+  $("races").innerHTML = A99.map(c => {
+    const fs = [...new Set(c.m.map(m => m[0]))], k = fs.filter(seen).length;
+    const row = m => `<div class="nom">${tickBtn(m[0])}<div><div class="who">${esc(m[1])}${m[2] ? '<span class="tier likely">Likely</span>' : ""}</div>
+      <div class="cr"><button class="film-link" data-film="${m[0]}" style="font-weight:500;color:inherit">${esc(FILMS[m[0]].t)}</button></div></div></div>`;
+    return `<article class="cat"><header><h3>${c.n}</h3><span class="prog">${k} of ${fs.length} films seen</span></header>
+      ${c.m.filter(m => m[2]).map(row).join("")}<div class="mix">In the mix</div>${c.m.filter(m => !m[2]).map(row).join("")}</article>`;
+  }).join("");
   $("contenders").innerHTML = order.map(f => {
     const F = F99[f], sn = seen(f);
     const by = [F.d, F.dist].filter(Boolean).join(" · ");
@@ -792,7 +833,8 @@ function openSheet(f) {
   const q = encodeURIComponent(F.t);
   const isC = F.y === "99";
   const badge = isC ? `<span class="badge">${TIER[F.tier]}</span>` : `<span class="badge">${SEASONS[F.y].n}</span><span class="badge">${n} nom${n > 1 ? "s" : ""} · ${w} win${w === 1 ? "" : "s"}</span>`;
-  const pred = isC ? [F.r ? `Best Picture: predicted #${F.r}` : "", F.dr ? `Best Director: predicted #${F.dr} (${esc(F.d)})` : "", !F.r && !F.dr ? "Gold Derby lists it among the films competing for the last Best Picture spots" : ""].filter(Boolean) : [];
+  const acting = isC ? A99.flatMap(c => c.m.filter(m => m[0] === f).map(m => `${c.n}: ${esc(m[1])}, ${m[2] ? "likely nominee" : "in the mix"}`)) : [];
+  const pred = isC ? [F.r ? `Best Picture: predicted #${F.r}` : "", F.dr ? `Best Director: predicted #${F.dr} (${esc(F.d)})` : "", ...acting, F.tier === "bubble" && !F.dr && !acting.length ? "Gold Derby lists it among the films competing for the last Best Picture spots" : ""].filter(Boolean) : [];
   sheet.innerHTML = `<div class="sheet-hero" style="--h:${F.h}">
       <button class="close" data-close aria-label="Close">×</button>
       <div>${badge}${KIND[F.k] ? `<span class="badge">${KIND[F.k]}</span>` : ""}${F.fam ? `<span class="badge">${famLabel[F.fam]}</span>` : ""}</div>

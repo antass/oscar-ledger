@@ -1,0 +1,877 @@
+<title>The Oscar Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a theatre programme. Marquee header with your season totals, then four tabs:
+   a poster wall of every nominated film, the 24 categories, a ballot, and next season. */
+:root {
+  --bg: #fbf7f5;          /* programme paper, faint rose */
+  --surface: #ffffff;
+  --sunk: #f2eae6;
+  --fg: #2b1016;          /* oxblood ink */
+  --muted: #7a5f63;
+  --line: #e4d6d1;
+  --gold: #9a6d14;        /* gilt, darkened for paper */
+  --gold-soft: #f3e5c4;
+  --curtain: #8f1d2c;
+  --seen: #2f6b4f;
+  --seen-soft: #dcefe4;
+  --poster-fg: #f8eedd;
+  --poster-gold: #e4c372;
+  --shadow: 0 1px 2px rgb(43 16 22 / .06), 0 8px 24px -12px rgb(43 16 22 / .25);
+  --display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #160a0d; --surface: #21100f; --sunk: #1b0c0f; --fg: #f4e7da; --muted: #b59a92;
+    --line: #3a2124; --gold: #dcb660; --gold-soft: #3a2a12; --curtain: #d04456;
+    --seen: #6fc59a; --seen-soft: #173326;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px -14px rgb(0 0 0 / .8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #160a0d; --surface: #21100f; --sunk: #1b0c0f; --fg: #f4e7da; --muted: #b59a92;
+  --line: #3a2124; --gold: #dcb660; --gold-soft: #3a2a12; --curtain: #d04456;
+  --seen: #6fc59a; --seen-soft: #173326;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 10px 30px -14px rgb(0 0 0 / .8);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 0 64px; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+/* Marquee */
+.marquee { padding-block: 36px 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 40px; align-items: end; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.marquee h1 { font: italic 600 clamp(40px, 7vw, 76px)/.95 var(--display); letter-spacing: -.02em; margin-top: 10px; }
+.marquee h1 span { font-style: normal; font-weight: 800; }
+.marquee p { color: var(--muted); margin: 12px 0 0; max-width: 54ch; }
+.tally { display: flex; gap: 28px; flex-wrap: wrap; }
+.tally div { display: grid; gap: 4px; min-width: 88px; }
+.tally b { font: 600 34px/1 var(--display); font-variant-numeric: lining-nums tabular-nums; }
+.tally b small { font-size: 16px; color: var(--muted); font-weight: 400; }
+.tally span { font: 500 10.5px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.meter { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--gold); transition: width .5s ease; }
+
+/* Tabs */
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; gap: 4px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+nav.tabs button { border: 0; background: none; padding: 8px 14px; border-radius: 999px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+nav.tabs .sync { margin-left: auto; align-self: center; font: 11px var(--mono); color: var(--muted); white-space: nowrap; padding-left: 12px; }
+
+section.view { padding-top: 24px; }
+
+/* Up next */
+.upnext { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 20px; align-items: center; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin-bottom: 22px; }
+.upnext h2 { font: italic 600 22px/1.1 var(--display); }
+.upnext .picks { display: flex; gap: 8px; flex-wrap: wrap; }
+.upnext button { border: 1px solid var(--line); background: var(--sunk); border-radius: 999px; padding: 6px 12px; font-size: 13.5px; }
+.upnext button em { font-style: normal; color: var(--muted); font: 11px var(--mono); margin-left: 6px; }
+.upnext button:hover { border-color: var(--gold); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 18px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 12px; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--gold-soft); border-color: var(--gold); color: var(--fg); font-weight: 600; }
+.chip .n { font: 11px var(--mono); color: var(--muted); margin-left: 4px; }
+.search { flex: 1 1 200px; min-width: 0; max-width: 300px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; }
+select.sort { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; }
+
+/* Poster wall */
+.wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 18px; }
+.poster { position: relative; aspect-ratio: 2 / 3; max-width: 100%; border: 0; padding: 14px 13px 12px; border-radius: 6px; text-align: left; color: var(--poster-fg); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow); transition: transform .18s ease, box-shadow .18s ease;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 118%, rgb(255 255 255 / .045) 0 4deg, transparent 4deg 9deg),
+    linear-gradient(165deg, hsl(var(--h) 42% 30%), hsl(var(--h) 55% 11%) 75%); }
+.poster:hover { transform: translateY(-3px); }
+.poster::after { content: ""; position: absolute; inset: 6px; border: 1px solid rgb(228 195 114 / .35); border-radius: 3px; pointer-events: none; }
+.poster .count { font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--poster-gold); }
+.poster .t { font: 600 clamp(19px, 2.1vw, 23px)/1.05 var(--display); margin-top: auto; text-wrap: balance; overflow-wrap: anywhere; }
+.poster .d { font-size: 11.5px; opacity: .78; margin-top: 6px; line-height: 1.3; }
+.poster .wins { display: flex; gap: 2px; margin-top: 10px; min-height: 18px; color: var(--poster-gold); align-items: flex-end; }
+.poster .wins svg { width: 8px; height: 18px; }
+.poster .kind { position: absolute; top: 12px; right: 12px; font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+.poster.seen { outline: 2px solid var(--seen); outline-offset: 3px; }
+.stamp { position: absolute; top: 34px; right: -30px; transform: rotate(32deg); background: var(--seen); color: #fff; font: 600 10px/1 var(--mono); letter-spacing: .14em; padding: 5px 34px; text-transform: uppercase; }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; grid-column: 1 / -1; }
+
+/* Categories */
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.cat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 16px 10px; min-width: 0; }
+.cat header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.cat h3 { font: 600 19px/1.15 var(--display); }
+.cat .prog { font: 11px var(--mono); color: var(--muted); white-space: nowrap; }
+.cat.done .prog { color: var(--seen); font-weight: 500; }
+.nom { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); align-items: start; }
+.nom:first-of-type { border-top: 0; }
+.tick { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line); background: transparent; padding: 0; display: grid; place-items: center; margin-top: 1px; }
+.tick svg { width: 12px; height: 12px; opacity: 0; }
+.tick.on { background: var(--seen); border-color: var(--seen); color: #fff; }
+.tick.on svg { opacity: 1; }
+.nom .who { font-weight: 600; font-size: 14.5px; line-height: 1.3; }
+.nom .who .film-link { font-weight: 600; background: none; border: 0; padding: 0; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.nom .who .film-link:hover { text-decoration-color: var(--gold); }
+.nom .cr { color: var(--muted); font-size: 12.5px; line-height: 1.35; margin-top: 2px; }
+.nom.win .who::after { content: "WINNER"; font: 600 9.5px/1 var(--mono); letter-spacing: .12em; color: var(--gold); border: 1px solid var(--gold); border-radius: 3px; padding: 2px 5px; margin-left: 8px; vertical-align: 2px; }
+
+/* Ballot */
+.ballot-bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; padding: 16px 18px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); margin-bottom: 18px; }
+.ballot-bar p { margin: 0; color: var(--muted); max-width: 60ch; }
+.ballot-bar .score { font: 600 28px/1 var(--display); }
+.btn { border: 1px solid var(--fg); background: var(--fg); color: var(--bg); padding: 8px 16px; border-radius: 999px; font-weight: 600; }
+.btn.ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+.pick { width: 100%; display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); padding: 8px 0; }
+.pick:first-of-type { border-top: 0; }
+.radio { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--muted); margin-top: 2px; }
+.pick[aria-checked="true"] .radio { border: 5px solid var(--curtain); }
+.pick.won .who { color: var(--gold); }
+.pick .tag { font: 600 9.5px/1 var(--mono); letter-spacing: .12em; margin-left: 6px; padding: 2px 5px; border-radius: 3px; vertical-align: 2px; }
+.pick .tag.ok { background: var(--seen-soft); color: var(--seen); }
+.pick .tag.ac { border: 1px solid var(--gold); color: var(--gold); }
+.cat.agree { border-color: var(--seen); }
+
+/* Next season */
+.next-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+.panel h2 { font: italic 600 26px/1.1 var(--display); margin-bottom: 6px; }
+.panel > p { color: var(--muted); margin: 0 0 16px; }
+.count-row { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 18px; }
+.count-row b { display: block; font: 600 48px/1 var(--display); font-variant-numeric: lining-nums tabular-nums; }
+.count-row span { font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+ol.timeline { list-style: none; margin: 0; padding: 0; }
+ol.timeline li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+ol.timeline li.past { color: var(--muted); }
+ol.timeline li.next-up span:last-child { font-weight: 600; }
+ol.timeline li.next-up span:first-child { color: var(--curtain); }
+.add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.add-row input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 12px; }
+.contender { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.contender .x { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 6px; }
+.contender.seen span { text-decoration: line-through; color: var(--muted); }
+
+/* Film sheet */
+dialog.sheet { border: 0; padding: 0; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); border-radius: 12px; background: var(--surface); color: var(--fg); box-shadow: 0 30px 80px -20px rgb(0 0 0 / .6); }
+dialog.sheet::backdrop { background: rgb(22 10 13 / .55); backdrop-filter: blur(2px); }
+.sheet-hero { padding: 22px 22px 18px; color: var(--poster-fg); position: relative;
+  background: repeating-conic-gradient(from 0deg at 50% 140%, rgb(255 255 255 / .05) 0 4deg, transparent 4deg 9deg), linear-gradient(165deg, hsl(var(--h) 42% 30%), hsl(var(--h) 55% 11%)); }
+.sheet-hero h2 { font: 600 32px/1.05 var(--display); margin-top: 8px; padding-right: 30px; }
+.sheet-hero .meta { font-size: 13px; opacity: .85; margin-top: 6px; }
+.sheet-hero .close { position: absolute; top: 12px; right: 12px; border: 0; background: rgb(255 255 255 / .12); color: var(--poster-fg); width: 32px; height: 32px; border-radius: 50%; font-size: 18px; }
+.sheet-body { padding: 18px 22px 22px; display: grid; gap: 18px; }
+.sheet-body .log { margin: 0; font-size: 15.5px; }
+.watch-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.seen-btn { border: 1.5px solid var(--seen); color: var(--seen); background: transparent; border-radius: 999px; padding: 8px 16px; font-weight: 600; }
+.seen-btn[aria-pressed="true"] { background: var(--seen); color: #fff; }
+.stars { display: flex; gap: 2px; }
+.stars button { border: 0; background: none; font-size: 22px; line-height: 1; padding: 2px; color: var(--line); }
+.stars button.on { color: var(--gold); }
+.sheet-body label { font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.sheet-body textarea { width: 100%; min-height: 70px; resize: vertical; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.sheet-noms { display: grid; gap: 0; }
+.sheet-noms div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.sheet-noms div:first-child { border-top: 0; }
+.sheet-noms small { color: var(--muted); display: block; font-size: 12.5px; }
+.sheet-noms .w { font: 600 9.5px/1 var(--mono); letter-spacing: .12em; color: var(--gold); align-self: center; }
+.links { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+.links a { color: var(--curtain); font-weight: 600; text-underline-offset: 3px; }
+.badge { display: inline-block; font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; border: 1px solid rgb(228 195 114 / .5); color: var(--poster-gold); padding: 4px 7px; border-radius: 3px; margin-right: 6px; }
+
+.seasons { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 16px; background: var(--surface); }
+.seasons button { border: 0; background: none; border-radius: 999px; padding: 6px 14px; display: flex; gap: 6px; align-items: baseline; color: var(--muted); }
+.seasons b { font: 600 15px/1 var(--display); }
+.seasons span { font: 11px var(--mono); }
+.seasons button[aria-pressed="true"] { background: var(--curtain); color: #fff; }
+.seasons button[aria-pressed="true"] span { color: rgb(255 255 255 / .75); }
+h3.sub { font: 600 17px/1.2 var(--display); margin: 22px 0 10px; }
+.crow { display: grid; grid-template-columns: 22px 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.crow:first-child { border-top: 0; }
+.crow .rk { font: 500 13px var(--mono); color: var(--gold); text-align: right; }
+.crow .film-link { background: none; border: 0; padding: 0; text-align: left; font-weight: 600; font-size: 15px; }
+.crow .film-link:hover { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+.crow .cr { color: var(--muted); font-size: 12.5px; }
+.tier { font: 600 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+.tier.likely { background: var(--gold-soft); color: var(--gold); }
+.tier.alt { border: 1px solid var(--line); color: var(--muted); }
+.tier.bubble { border: 1px dashed var(--line); color: var(--muted); }
+.crow.seen .film-link { color: var(--muted); }
+footer.note { margin-top: 40px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 760px) {
+  .marquee { grid-template-columns: minmax(0, 1fr); }
+  .next-grid { grid-template-columns: minmax(0, 1fr); }
+  .cats { grid-template-columns: minmax(0, 1fr); }
+  .upnext { grid-template-columns: minmax(0, 1fr); }
+  .wall { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .wrap { padding-inline: 16px; }
+  nav.tabs .sync { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="marquee">
+    <div>
+      <div class="seasons" role="group" aria-label="Ceremony" id="seasons">
+        <button data-season="97"><b>97th</b><span>2025</span></button>
+        <button data-season="98"><b>98th</b><span>2026</span></button>
+        <button data-season="99"><b>99th</b><span>2027</span></button>
+      </div>
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1>The Oscar <span>Ledger</span></h1>
+      <p id="lede"></p>
+    </div>
+    <div class="tally" id="tally"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-films" data-view="films" aria-selected="true">Films</button>
+    <button role="tab" id="tab-cats" data-view="cats" aria-selected="false">Categories</button>
+    <button role="tab" id="tab-ballot" data-view="ballot" aria-selected="false">Your ballot</button>
+    <button role="tab" id="tab-next" data-view="next" aria-selected="false" hidden>Contenders</button>
+    <span class="sync" id="sync">Saved on this device</span>
+  </nav>
+
+  <section class="view" id="view-films">
+    <div class="upnext" id="upnext"></div>
+    <div class="controls">
+      <div class="chips" id="filters"></div>
+      <input class="search" id="q" type="search" placeholder="Search films or people" aria-label="Search films or people">
+      <select class="sort" id="sort" aria-label="Sort films">
+        <option value="noms">Most nominated</option>
+        <option value="wins">Most wins</option>
+        <option value="az">A to Z</option>
+        <option value="rating">My rating</option>
+      </select>
+    </div>
+    <div class="wall" id="wall"></div>
+  </section>
+
+  <section class="view" id="view-cats" hidden>
+    <div class="controls"><div class="chips" id="catfilters"></div></div>
+    <div class="cats" id="cats"></div>
+  </section>
+
+  <section class="view" id="view-ballot" hidden>
+    <div class="ballot-bar" id="ballotbar"></div>
+    <div class="cats" id="ballot"></div>
+  </section>
+
+  <section class="view" id="view-next" hidden>
+    <div class="next-grid">
+      <div class="panel">
+        <h2>Most likely contenders</h2>
+        <p>The films pundits expect to be nominated, ranked by Best Picture odds. Nothing is official until January 21. Watch these early and you'll be ahead of the season.</p>
+        <div id="contenders"></div>
+        <h3 class="sub">Your own additions</h3>
+        <form class="add-row" id="addform">
+          <input id="addtitle" placeholder="Add a 2026 film you've heard about" aria-label="Film title" maxlength="80" autocomplete="off">
+          <button class="btn" type="submit">Add</button>
+        </form>
+        <div id="mine"></div>
+      </div>
+      <div class="panel" id="countdown"></div>
+    </div>
+  </section>
+
+  <footer class="note" id="footnote"></footer>
+</div>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title"></dialog>
+
+<script>
+/* ---------- Data: 98th Academy Awards (March 15, 2026) ---------- */
+// k: feature | animated | doc | short ; h: poster hue ; fam: family night tag
+const F98 = {
+  oba:{t:"One Battle After Another",d:"Paul Thomas Anderson",k:"feature",h:28,l:"A burned-out ex-revolutionary is dragged back into the fight when an old enemy resurfaces and his daughter goes missing. Based loosely on Thomas Pynchon's Vineland."},
+  sin:{t:"Sinners",d:"Ryan Coogler",k:"feature",h:356,l:"Twin brothers return to 1930s Mississippi to open a juke joint, and the music draws something evil to the door. Record 16 nominations."},
+  fra:{t:"Frankenstein",d:"Guillermo del Toro",k:"feature",h:205,l:"Del Toro's take on Mary Shelley: Victor Frankenstein and the Creature he brings to life, and abandons."},
+  mar:{t:"Marty Supreme",d:"Josh Safdie",k:"feature",h:14,l:"A fast-talking 1950s New York hustler chases glory in professional table tennis."},
+  sen:{t:"Sentimental Value",d:"Joachim Trier",k:"feature",h:220,l:"Two sisters and the filmmaker father who left them, reunited when he wants one of them to star in his comeback film."},
+  ham:{t:"Hamnet",d:"Chloé Zhao",k:"feature",h:110,l:"Agnes, wife of William Shakespeare, and the loss of their son, from Maggie O'Farrell's novel."},
+  bug:{t:"Bugonia",d:"Yorgos Lanthimos",k:"feature",h:150,l:"Two conspiracy-obsessed men kidnap a powerful CEO, convinced she is an alien. A remake of Save the Green Planet!"},
+  f1:{t:"F1",d:"Joseph Kosinski",k:"feature",h:4,fam:"teens",l:"A veteran racer returns to Formula One to mentor a rookie on a struggling team."},
+  sec:{t:"The Secret Agent",d:"Kleber Mendonça Filho",k:"feature",h:42,l:"Brazil, 1977: a man on the run from his past hides out in Recife during Carnival."},
+  trd:{t:"Train Dreams",d:"Clint Bentley",k:"feature",h:90,l:"One logger's quiet life in the early 20th-century American West, from Denis Johnson's novella."},
+  blu:{t:"Blue Moon",d:"Richard Linklater",k:"feature",h:232,l:"Lyricist Lorenz Hart spends the opening night of Oklahoma! at a bar, watching his old partner's new triumph."},
+  iwa:{t:"It Was Just an Accident",d:"Jafar Panahi",k:"feature",h:48,l:"Former political prisoners believe they've caught the man who tortured them, and have to decide what to do."},
+  wea:{t:"Weapons",d:"Zach Cregger",k:"feature",h:268,l:"Every child in one classroom but one runs out into the night at 2:17 a.m. and disappears."},
+  ifl:{t:"If I Had Legs I'd Kick You",d:"Mary Bronstein",k:"feature",h:330,l:"A mother's life comes apart while she cares for her sick daughter."},
+  ssb:{t:"Song Sung Blue",d:"Craig Brewer",k:"feature",h:212,l:"The true story of a Milwaukee couple who found love fronting a Neil Diamond tribute act."},
+  ava:{t:"Avatar: Fire and Ash",d:"James Cameron",k:"feature",h:192,fam:"teens",l:"The Sully family faces a new, fire-aligned Na'vi clan on Pandora."},
+  jwr:{t:"Jurassic World Rebirth",d:"Gareth Edwards",k:"feature",h:132,fam:"teens",l:"A team heads to an island of surviving dinosaurs to collect DNA for a medical breakthrough."},
+  lob:{t:"The Lost Bus",d:"Paul Greengrass",k:"feature",h:22,l:"A school bus driver tries to get 22 children out of the 2018 Camp Fire in Paradise, California."},
+  kok:{t:"Kokuho",d:"Lee Sang-il",k:"feature",h:340,l:"Half a century in the life of a kabuki actor, from yakuza orphan to national treasure."},
+  smm:{t:"The Smashing Machine",d:"Benny Safdie",k:"feature",h:0,l:"Dwayne Johnson as early MMA fighter Mark Kerr."},
+  ugs:{t:"The Ugly Stepsister",d:"Emilie Blichfeldt",k:"feature",h:300,l:"Cinderella from the stepsister's side, as body horror."},
+  sir:{t:"Sirāt",d:"Oliver Laxe",k:"feature",h:36,l:"A father and son search the desert raves of southern Morocco for a missing daughter."},
+  vhr:{t:"The Voice of Hind Rajab",d:"Kaouther Ben Hania",k:"feature",h:8,l:"Red Crescent volunteers stay on the line with a young girl trapped in a car in Gaza, built around the real call recordings."},
+  kpd:{t:"KPop Demon Hunters",d:"Maggie Kang, Chris Appelhans",k:"animated",h:290,fam:"family",l:"A K-pop girl group secretly protects the world from demons, and runs into a rival boy band that is one."},
+  zo2:{t:"Zootopia 2",d:"Jared Bush, Byron Howard",k:"animated",h:180,fam:"family",l:"Judy Hopps and Nick Wilde follow a mysterious reptile through new corners of the city."},
+  eli:{t:"Elio",d:"Madeline Sharafian, Domee Shi, Adrian Molina",k:"animated",h:250,fam:"family",l:"A space-obsessed boy gets beamed up and mistaken for Earth's ambassador."},
+  arc:{t:"Arco",d:"Ugo Bienvenu",k:"animated",h:46,fam:"family",l:"A boy from the far future falls through time into 2075 and befriends a girl who helps him get home."},
+  lam:{t:"Little Amélie or the Character of Rain",d:"Maïlys Vallade, Liane-Cho Han",k:"animated",h:160,fam:"family",l:"A Belgian toddler growing up in Japan discovers the world, from Amélie Nothomb's novel."},
+  mnp:{t:"Mr Nobody Against Putin",d:"David Borenstein, Pavel Talankin",k:"doc",h:214,l:"A Russian schoolteacher secretly films the war propaganda arriving in his classroom."},
+  ala:{t:"The Alabama Solution",d:"Andrew Jarecki, Charlotte Kaufman",k:"doc",h:24,l:"Footage smuggled out by incarcerated men exposes conditions inside Alabama's prisons."},
+  csm:{t:"Come See Me in the Good Light",d:"Ryan White",k:"doc",h:52,l:"Poet Andrea Gibson and their partner Megan Falley face a cancer diagnosis with humor and love."},
+  ctr:{t:"Cutting Through Rocks",d:"Sara Khaki, Mohammadreza Eyni",k:"doc",h:30,l:"The first woman elected to her Iranian village council takes on child marriage."},
+  tpn:{t:"The Perfect Neighbor",d:"Geeta Gandbhir",k:"doc",h:120,l:"A Florida neighborhood feud ends in a killing, told almost entirely through police body-cam footage."},
+  dwr:{t:"Diane Warren: Relentless",d:"",k:"doc",h:316,l:"A portrait of hit songwriter Diane Warren."},
+  vvd:{t:"Viva Verdi!",d:"",k:"doc",h:40,l:"Life inside Casa Verdi, the Milan retirement home Giuseppe Verdi founded for musicians."},
+  aer:{t:"All the Empty Rooms",k:"short",h:210,d:"Joshua Seftel"},
+  aoc:{t:"Armed Only with a Camera: The Life and Death of Brent Renaud",k:"short",h:26,d:"Craig Renaud, Juan Arredondo"},
+  cnm:{t:"Children No More: “Were and Are Gone”",k:"short",h:0,d:"Hilla Medalia, Sheila Nevins"},
+  dib:{t:"The Devil Is Busy",k:"short",h:280,d:"Christalyn Hampton, Geeta Gandbhir"},
+  pas:{t:"Perfectly a Strangeness",k:"short",h:200,d:"Alison McAlpine"},
+  sng:{t:"The Singers",k:"short",h:34,d:"Sam A. Davis, Jack Piatt"},
+  tpe:{t:"Two People Exchanging Saliva",k:"short",h:320,d:"Alexandre Singh, Natalie Musteata"},
+  bst:{t:"Butcher's Stain",k:"short",h:2,d:"Meyer Levinson-Blount, Oron Caspi"},
+  afd:{t:"A Friend of Dorothy",k:"short",h:140,d:"Lee Knight, James Dean"},
+  jap:{t:"Jane Austen's Period Drama",k:"short",h:340,d:"Julia Aks, Steve Pinder"},
+  gcp:{t:"The Girl Who Cried Pearls",k:"short",h:196,d:"Chris Lavis, Maciek Szczerbowski"},
+  bfy:{t:"Butterfly",k:"short",h:44,d:"Florence Miailhe, Ron Dyens"},
+  fev:{t:"Forevergreen",k:"short",h:118,d:"Nathan Engelhardt, Jeremy Spears"},
+  rpl:{t:"Retirement Plan",k:"short",h:228,d:"John Kelly, Andrew Freedman"},
+  tts:{t:"The Three Sisters",k:"short",h:12,d:"Konstantin Bronzit"}
+};
+
+// Each nominee: [film id, headline (person/song; blank = film title), credit line, winner?]
+const C98 = [
+  {id:"pic",n:"Best Picture",g:"top",m:[
+    ["oba","","Adam Somner (posthumous), Sara Murphy, Paul Thomas Anderson",1],
+    ["bug","","Ed Guiney, Andrew Lowe, Yorgos Lanthimos, Emma Stone, Lars Knudsen"],
+    ["f1","","Chad Oman, Brad Pitt, Dede Gardner, Jeremy Kleiner, Joseph Kosinski, Jerry Bruckheimer"],
+    ["fra","","Guillermo del Toro, J. Miles Dale, Scott Stuber"],
+    ["ham","","Liza Marshall, Pippa Harris, Nicolas Gonda, Steven Spielberg, Sam Mendes"],
+    ["mar","","Eli Bush, Ronald Bronstein, Josh Safdie, Anthony Katagas, Timothée Chalamet"],
+    ["sec","","Emilie Lesclaux"],
+    ["sen","","Maria Ekerhovd, Andrea Berentsen Ottmar"],
+    ["sin","","Zinzi Coogler, Sev Ohanian, Ryan Coogler"],
+    ["trd","","Marissa McMahon, Teddy Schwarzman, Will Janowitz, Ashley Schlaifer, Michael Heimler"]]},
+  {id:"dir",n:"Directing",g:"top",m:[
+    ["oba","Paul Thomas Anderson","",1],["ham","Chloé Zhao",""],["mar","Josh Safdie",""],["sen","Joachim Trier",""],["sin","Ryan Coogler",""]]},
+  {id:"act",n:"Actor in a Leading Role",g:"act",m:[
+    ["sin","Michael B. Jordan","as Smoke and Stack Moore",1],["mar","Timothée Chalamet","as Marty Mauser"],["oba","Leonardo DiCaprio","as Bob Ferguson"],["blu","Ethan Hawke","as Lorenz Hart"],["sec","Wagner Moura","as Armando / Marcelo / Fernando"]]},
+  {id:"acs",n:"Actress in a Leading Role",g:"act",m:[
+    ["ham","Jessie Buckley","as Agnes Shakespeare",1],["ifl","Rose Byrne","as Linda"],["ssb","Kate Hudson","as Claire Sardina"],["sen","Renate Reinsve","as Nora Borg"],["bug","Emma Stone","as Michelle Fuller"]]},
+  {id:"sac",n:"Actor in a Supporting Role",g:"act",m:[
+    ["oba","Sean Penn","as Col. Steven J. Lockjaw",1],["oba","Benicio del Toro","as Sensei Sergio St. Carlos"],["fra","Jacob Elordi","as The Creature"],["sin","Delroy Lindo","as Delta Slim"],["sen","Stellan Skarsgård","as Gustav Borg"]]},
+  {id:"sas",n:"Actress in a Supporting Role",g:"act",m:[
+    ["wea","Amy Madigan","as Aunt Gladys",1],["sen","Elle Fanning","as Rachel Kemp"],["sen","Inga Ibsdotter Lilleaas","as Agnes Borg Pettersen"],["sin","Wunmi Mosaku","as Annie"],["oba","Teyana Taylor","as Perfidia Beverly Hills"]]},
+  {id:"osp",n:"Original Screenplay",g:"top",m:[
+    ["sin","","Ryan Coogler",1],["blu","","Robert Kaplow"],["iwa","","Jafar Panahi; with Nader Saïvar, Shadmehr Rastin, Mehdi Mahmoudian"],["mar","","Ronald Bronstein, Josh Safdie"],["sen","","Eskil Vogt, Joachim Trier"]]},
+  {id:"asp",n:"Adapted Screenplay",g:"top",m:[
+    ["oba","","Paul Thomas Anderson; from Vineland by Thomas Pynchon",1],["bug","","Will Tracy; from Save the Green Planet! by Jang Joon-hwan"],["fra","","Guillermo del Toro; from the novel by Mary Shelley"],["ham","","Chloé Zhao, Maggie O'Farrell; from O'Farrell's novel"],["trd","","Clint Bentley, Greg Kwedar; from the novella by Denis Johnson"]]},
+  {id:"ani",n:"Animated Feature",g:"feat",m:[
+    ["kpd","","Maggie Kang, Chris Appelhans, Michelle L.M. Wong",1],["arc","","Ugo Bienvenu, Félix de Givry, Sophie Mas, Natalie Portman"],["eli","","Madeline Sharafian, Domee Shi, Adrian Molina, Mary Alice Drumm"],["lam","","Maïlys Vallade, Liane-Cho Han, Nidia Santiago, Henri Magalon"],["zo2","","Jared Bush, Byron Howard, Yvett Merino"]]},
+  {id:"int",n:"International Feature",g:"feat",m:[
+    ["sen","","Norway · Joachim Trier",1],["iwa","","France · Jafar Panahi"],["sec","","Brazil · Kleber Mendonça Filho"],["sir","","Spain · Oliver Laxe"],["vhr","","Tunisia · Kaouther Ben Hania"]]},
+  {id:"doc",n:"Documentary Feature",g:"feat",m:[
+    ["mnp","","David Borenstein, Pavel Talankin, Helle Faber, Alžběta Karásková",1],["ala","","Andrew Jarecki, Charlotte Kaufman"],["csm","","Ryan White, Jessica Hargrave, Tig Notaro, Stef Willen"],["ctr","","Sara Khaki, Mohammadreza Eyni"],["tpn","","Geeta Gandbhir, Alisa Payne, Nikon Kwantu, Sam Bisbee"]]},
+  {id:"cin",n:"Cinematography",g:"craft",m:[
+    ["sin","","Autumn Durald Arkapaw",1],["fra","","Dan Laustsen"],["mar","","Darius Khondji"],["oba","","Michael Bauman"],["trd","","Adolpho Veloso"]]},
+  {id:"edi",n:"Film Editing",g:"craft",m:[
+    ["oba","","Andy Jurgensen",1],["f1","","Stephen Mirrione"],["mar","","Ronald Bronstein, Josh Safdie"],["sen","","Olivier Bugge Coutté"],["sin","","Michael P. Shawver"]]},
+  {id:"cas",n:"Casting",g:"craft",m:[
+    ["oba","","Cassandra Kulukundis",1],["ham","","Nina Gold"],["mar","","Jennifer Venditti"],["sec","","Gabriel Domingues"],["sin","","Francine Maisler"]]},
+  {id:"pro",n:"Production Design",g:"craft",m:[
+    ["fra","","Tamara Deverell; set decoration Shane Vieau",1],["ham","","Fiona Crombie; set decoration Alice Felton"],["mar","","Jack Fisk; set decoration Adam Willis"],["oba","","Florencia Martin; set decoration Anthony Carlino"],["sin","","Hannah Beachler; set decoration Monique Champagne"]]},
+  {id:"cos",n:"Costume Design",g:"craft",m:[
+    ["fra","","Kate Hawley",1],["ava","","Deborah L. Scott"],["ham","","Malgosia Turzanska"],["mar","","Miyako Bellizzi"],["sin","","Ruth E. Carter"]]},
+  {id:"mak",n:"Makeup and Hairstyling",g:"craft",m:[
+    ["fra","","Mike Hill, Jordan Samuel, Cliona Furey",1],["kok","","Kyoko Toyokawa, Naomi Hibino, Tadashi Nishimatsu"],["sin","","Ken Diaz, Mike Fontaine, Shunika Terry"],["smm","","Kazu Hiro, Glen Griffin, Bjoern Rehbein"],["ugs","","Thomas Foldberg, Anne Cathrine Sauerberg"]]},
+  {id:"snd",n:"Sound",g:"craft",m:[
+    ["f1","","Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo, Juan Peralta",1],["fra","","Greg Chapman, Nathan Robitaille, Nelson Ferreira, Christian Cooke, Brad Zoern"],["oba","","José Antonio García, Christopher Scarabosio, Tony Villaflor"],["sin","","Chris Welcker, Benjamin A. Burtt, Felipe Pacheco, Brandon Proctor, Steve Boeddeker"],["sir","","Amanda Villavieja, Laia Casanovas, Yasmina Praderas"]]},
+  {id:"vfx",n:"Visual Effects",g:"craft",m:[
+    ["ava","","Joe Letteri, Richard Baneham, Eric Saindon, Daniel Barrett",1],["f1","","Ryan Tudhope, Nicolas Chevallier, Robert Harrington, Keith Dawson"],["jwr","","David Vickery, Stephen Aplin, Charmaine Chan, Neil Corbould"],["lob","","Charlie Noble, David Zaretti, Russell Bowen, Brandon K. McLaughlin"],["sin","","Michael Ralla, Espen Nordahl, Guido Wolter, Donnie Dean"]]},
+  {id:"sco",n:"Original Score",g:"craft",m:[
+    ["sin","","Ludwig Göransson",1],["bug","","Jerskin Fendrix"],["fra","","Alexandre Desplat"],["ham","","Max Richter"],["oba","","Jonny Greenwood"]]},
+  {id:"son",n:"Original Song",g:"craft",m:[
+    ["kpd","“Golden”","EJAE, Mark Sonnenblick, Joong Gyu Kwak, Yu Han Lee, Hee Dong Nam, Jeong Hoon Seo, Teddy Park",1],["dwr","“Dear Me”","Diane Warren"],["sin","“I Lied to You”","Raphael Saadiq, Ludwig Göransson"],["vvd","“Sweet Dreams of Joy”","Nicholas Pike"],["trd","“Train Dreams”","Nick Cave, Bryce Dessner"]]},
+  {id:"dsh",n:"Documentary Short",g:"short",m:[
+    ["aer","","Joshua Seftel, Conall Jones",1],["aoc","","Craig Renaud, Juan Arredondo"],["cnm","","Hilla Medalia, Sheila Nevins"],["dib","","Christalyn Hampton, Geeta Gandbhir"],["pas","","Alison McAlpine"]]},
+  {id:"lsh",n:"Live Action Short",g:"short",m:[
+    ["sng","","Sam A. Davis, Jack Piatt",1],["tpe","","Alexandre Singh, Natalie Musteata",1],["bst","","Meyer Levinson-Blount, Oron Caspi"],["afd","","Lee Knight, James Dean"],["jap","","Julia Aks, Steve Pinder"]]},
+  {id:"ash",n:"Animated Short",g:"short",m:[
+    ["gcp","","Chris Lavis, Maciek Szczerbowski",1],["bfy","","Florence Miailhe, Ron Dyens"],["fev","","Nathan Engelhardt, Jeremy Spears"],["rpl","","John Kelly, Andrew Freedman"],["tts","","Konstantin Bronzit"]]}
+];
+
+/* ---------- Data: 97th Academy Awards (March 2, 2025) ---------- */
+const F97 = {
+  anora:{t:"Anora",d:"Sean Baker",k:"feature",h:330,l:"A Brooklyn stripper impulsively marries the son of a Russian oligarch, and his family sends its fixers to undo it."},
+  brutalist:{t:"The Brutalist",d:"Brady Corbet",k:"feature",h:30,l:"A Hungarian-Jewish architect survives the Holocaust and builds a new life, and a monumental building, in postwar America."},
+  emilia:{t:"Emilia Pérez",d:"Jacques Audiard",k:"feature",h:350,l:"A musical crime drama: a Mexican cartel boss hires a lawyer to help her disappear and live as the woman she has always been."},
+  wicked:{t:"Wicked",d:"Jon M. Chu",k:"feature",h:130,fam:"family",l:"How Elphaba and Glinda met at Shiz University, long before Dorothy came to Oz."},
+  unknown:{t:"A Complete Unknown",d:"James Mangold",k:"feature",h:38,l:"Bob Dylan arrives in the early-1960s New York folk scene and, four years later, goes electric at Newport."},
+  conclave:{t:"Conclave",d:"Edward Berger",k:"feature",h:0,l:"A cardinal runs the secret election of a new pope and uncovers what the candidates are hiding."},
+  dune2:{t:"Dune: Part Two",d:"Denis Villeneuve",k:"feature",h:34,fam:"teens",l:"Paul Atreides joins the Fremen and leads them in war against the Harkonnens."},
+  substance:{t:"The Substance",d:"Coralie Fargeat",k:"feature",h:340,l:"A fading TV fitness star takes a black-market drug that splits off a younger version of herself."},
+  nosferatu:{t:"Nosferatu",d:"Robert Eggers",k:"feature",h:220,l:"Robert Eggers' remake: an ancient vampire becomes obsessed with a young woman in 1830s Germany."},
+  stillhere:{t:"I'm Still Here",d:"Walter Salles",k:"feature",h:44,l:"In 1970s Brazil, Eunice Paiva holds her family together after the military dictatorship takes her husband."},
+  singsing:{t:"Sing Sing",d:"Greg Kwedar",k:"feature",h:200,l:"Men in a maximum-security prison's theater program stage an original comedy, several playing versions of themselves."},
+  wildrobot:{t:"The Wild Robot",d:"Chris Sanders",k:"animated",h:100,fam:"family",l:"A robot stranded on a wild island learns to survive and raises an orphaned gosling."},
+  apprentice:{t:"The Apprentice",d:"Ali Abbasi",k:"feature",h:20,l:"A young Donald Trump learns how to win from lawyer Roy Cohn in 1970s and 80s New York."},
+  flow:{t:"Flow",d:"Gints Zilbalodis",k:"animated",h:190,fam:"family",l:"A cat survives a great flood aboard a drifting boat with other animals. No dialogue at all."},
+  nickel:{t:"Nickel Boys",d:"RaMell Ross",k:"feature",h:60,l:"Two Black teenagers survive an abusive Florida reform school in the 1960s, filmed entirely through their eyes."},
+  realpain:{t:"A Real Pain",d:"Jesse Eisenberg",k:"feature",h:210,l:"Two mismatched cousins tour Poland to honor their late grandmother."},
+  sept5:{t:"September 5",d:"Tim Fehlbaum",k:"feature",h:24,l:"An ABC Sports crew finds itself covering the hostage crisis at the 1972 Munich Olympics live."},
+  io2:{t:"Inside Out 2",d:"Kelsey Mann",k:"animated",h:290,fam:"family",l:"Riley turns 13, and a new set of emotions led by Anxiety moves into headquarters."},
+  snail:{t:"Memoir of a Snail",d:"Adam Elliot",k:"animated",h:80,l:"A lonely snail collector looks back on her life after being separated from her twin brother. Stop-motion, for grown-ups."},
+  wallace:{t:"Wallace & Gromit: Vengeance Most Fowl",d:"Nick Park, Merlin Crossingham",k:"animated",h:14,fam:"family",l:"Wallace's new smart gnome goes rogue, and Feathers McGraw the penguin is back."},
+  needle:{t:"The Girl with the Needle",d:"Magnus von Horn",k:"feature",h:230,l:"A desperate factory worker in post-WWI Copenhagen. Dark, black and white, based on a real case."},
+  sacredfig:{t:"The Seed of the Sacred Fig",d:"Mohammad Rasoulof",k:"feature",h:110,l:"An Iranian judge's gun goes missing at home during the 2022 protests, and he turns on his family."},
+  nootherland:{t:"No Other Land",d:"Basel Adra, Hamdan Ballal, Yuval Abraham, Rachel Szor",k:"doc",h:36,l:"A Palestinian activist and an Israeli journalist document the demolition of villages in Masafer Yatta."},
+  blackbox:{t:"Black Box Diaries",d:"Shiori Itō",k:"doc",h:250,l:"Journalist Shiori Itō investigates her own sexual assault case in Japan."},
+  porcelain:{t:"Porcelain War",d:"Brendan Bellomo, Slava Leontyev",k:"doc",h:196,l:"Ukrainian artists keep making art while taking up arms to defend their country."},
+  soundtrack:{t:"Soundtrack to a Coup d'Etat",d:"Johan Grimonprez",k:"doc",h:270,l:"Jazz, Cold War politics and the 1961 assassination of Congo's Patrice Lumumba."},
+  sugarcane:{t:"Sugarcane",d:"Julian Brave NoiseCat, Emily Kassie",k:"doc",h:28,l:"An investigation into abuse at a Catholic residential school for Indigenous children in Canada."},
+  maria:{t:"Maria",d:"Pablo Larraín",k:"feature",h:18,l:"Angelina Jolie as Maria Callas in her final days in Paris."},
+  differentman:{t:"A Different Man",d:"Aaron Schimberg",k:"feature",h:170,l:"An actor with a facial disfigurement undergoes surgery, then fixates on a play about his old life."},
+  gladiator2:{t:"Gladiator II",d:"Ridley Scott",k:"feature",h:32,l:"Years after Maximus, Lucius is forced to fight in the Colosseum."},
+  alien:{t:"Alien: Romulus",d:"Fede Álvarez",k:"feature",h:150,l:"Young colonists scavenging a derelict space station run into a xenomorph."},
+  betterman:{t:"Better Man",d:"Michael Gracey",k:"feature",h:48,l:"Robbie Williams' life story, with Williams played as a CGI chimpanzee."},
+  apes:{t:"Kingdom of the Planet of the Apes",d:"Wes Ball",k:"feature",h:90,fam:"teens",l:"Generations after Caesar, a young chimp sets out to rescue his captured clan."},
+  sixtriple:{t:"The Six Triple Eight",d:"Tyler Perry",k:"feature",h:206,l:"The all-Black, all-female WWII battalion that cleared a massive backlog of soldiers' mail."},
+  eltonjohn:{t:"Elton John: Never Too Late",d:"R.J. Cutler, David Furnish",k:"doc",h:300,l:"Elton John looks back on his early career as he prepares for his last tour."},
+  orchestra:{t:"The Only Girl in the Orchestra",k:"short",h:330,d:"Molly O'Brien, Lisa Remington"},
+  deathnums:{t:"Death by Numbers",k:"short",h:210,d:"Kim A. Snyder, Janique L. Robillard"},
+  warden:{t:"I Am Ready, Warden",k:"short",h:10,d:"Smriti Mundhra, Maya Gnyp"},
+  incident:{t:"Incident",k:"short",h:240,d:"Bill Morrison, Jamie Kalven"},
+  instruments:{t:"Instruments of a Beating Heart",k:"short",h:120,d:"Ema Ryan Yamazaki, Eric Nyari"},
+  robot:{t:"I'm Not a Robot",k:"short",h:190,d:"Victoria Warmerdam, Trent"},
+  alienshort:{t:"A Lien",k:"short",h:40,d:"Sam Cutler-Kreutz, David Cutler-Kreutz"},
+  anuja:{t:"Anuja",k:"short",h:26,d:"Adam J. Graves, Suchitra Mattai"},
+  lastranger:{t:"The Last Ranger",k:"short",h:95,d:"Cindy Lee, Darwin Shaw"},
+  silent:{t:"The Man Who Could Not Remain Silent",k:"short",h:220,d:"Nebojša Slijepčević, Danijel Pek"},
+  cypress:{t:"In the Shadow of the Cypress",k:"short",h:30,d:"Shirin Sohani, Hossein Molayemi"},
+  beautifulmen:{t:"Beautiful Men",k:"short",h:310,d:"Nicolas Keppens, Brecht Van Elslande"},
+  candies:{t:"Magic Candies",k:"short",h:350,d:"Daisuke Nishio, Takashi Washio"},
+  wander:{t:"Wander to Wonder",k:"short",h:260,d:"Nina Gantz, Stienette Bosklopper"},
+  yuck:{t:"Yuck!",k:"short",h:120,d:"Loïc Espuche, Juliette Marquet"}
+};
+
+const C97 = [
+  {id:"pic",n:"Best Picture",g:"top",m:[
+    ["anora","","Alex Coco, Samantha Quan, Sean Baker",1],
+    ["brutalist","","Nick Gordon, Brian Young, Andrew Morrison, D.J. Gugenheim, Brady Corbet"],
+    ["unknown","","Fred Berger, James Mangold, Alex Heineman"],
+    ["conclave","","Tessa Ross, Juliette Howell, Michael A. Jackman"],
+    ["dune2","","Mary Parent, Cale Boyter, Tanya Lapointe, Denis Villeneuve"],
+    ["emilia","","Pascal Caucheteux, Jacques Audiard"],
+    ["stillhere","","Maria Carlota Bruno, Rodrigo Teixeira"],
+    ["nickel","","Dede Gardner, Jeremy Kleiner, Joslyn Barnes"],
+    ["substance","","Coralie Fargeat, Tim Bevan, Eric Fellner"],
+    ["wicked","","Marc Platt"]]},
+  {id:"dir",n:"Directing",g:"top",m:[
+    ["anora","Sean Baker","",1],["brutalist","Brady Corbet",""],["unknown","James Mangold",""],["emilia","Jacques Audiard",""],["substance","Coralie Fargeat",""]]},
+  {id:"act",n:"Actor in a Leading Role",g:"act",m:[
+    ["brutalist","Adrien Brody","as László Tóth",1],["unknown","Timothée Chalamet","as Bob Dylan"],["singsing","Colman Domingo","as John “Divine G” Whitfield"],["conclave","Ralph Fiennes","as Cardinal Thomas Lawrence"],["apprentice","Sebastian Stan","as Donald Trump"]]},
+  {id:"acs",n:"Actress in a Leading Role",g:"act",m:[
+    ["anora","Mikey Madison","as Ani Mikheeva",1],["wicked","Cynthia Erivo","as Elphaba"],["emilia","Karla Sofía Gascón","as Emilia Pérez / Manitas"],["substance","Demi Moore","as Elisabeth Sparkle"],["stillhere","Fernanda Torres","as Eunice Paiva"]]},
+  {id:"sac",n:"Actor in a Supporting Role",g:"act",m:[
+    ["realpain","Kieran Culkin","as Benji Kaplan",1],["anora","Yura Borisov","as Igor"],["unknown","Edward Norton","as Pete Seeger"],["brutalist","Guy Pearce","as Harrison Lee Van Buren Sr."],["apprentice","Jeremy Strong","as Roy Cohn"]]},
+  {id:"sas",n:"Actress in a Supporting Role",g:"act",m:[
+    ["emilia","Zoe Saldaña","as Rita Mora Castro",1],["unknown","Monica Barbaro","as Joan Baez"],["wicked","Ariana Grande","as Glinda"],["brutalist","Felicity Jones","as Erzsébet Tóth"],["conclave","Isabella Rossellini","as Sister Agnes"]]},
+  {id:"osp",n:"Original Screenplay",g:"top",m:[
+    ["anora","","Sean Baker",1],["brutalist","","Brady Corbet, Mona Fastvold"],["realpain","","Jesse Eisenberg"],["sept5","","Moritz Binder, Tim Fehlbaum; co-written by Alex David"],["substance","","Coralie Fargeat"]]},
+  {id:"asp",n:"Adapted Screenplay",g:"top",m:[
+    ["conclave","","Peter Straughan; from the novel by Robert Harris",1],["unknown","","James Mangold, Jay Cocks; from Dylan Goes Electric! by Elijah Wald"],["emilia","","Jacques Audiard, with Thomas Bidegain, Léa Mysius, Nicolas Livecchi"],["nickel","","RaMell Ross, Joslyn Barnes; from the novel by Colson Whitehead"],["singsing","","Clint Bentley, Greg Kwedar; story with Clarence Maclin, John “Divine G” Whitfield"]]},
+  {id:"ani",n:"Animated Feature",g:"feat",m:[
+    ["flow","","Gints Zilbalodis, Matīss Kaža, Ron Dyens, Gregory Zalcman",1],["io2","","Kelsey Mann, Mark Nielsen"],["snail","","Adam Elliot, Liz Kearney"],["wallace","","Nick Park, Merlin Crossingham, Richard Beek"],["wildrobot","","Chris Sanders, Jeff Hermann"]]},
+  {id:"int",n:"International Feature",g:"feat",m:[
+    ["stillhere","","Brazil · Walter Salles",1],["emilia","","France · Jacques Audiard"],["flow","","Latvia · Gints Zilbalodis"],["needle","","Denmark · Magnus von Horn"],["sacredfig","","Germany · Mohammad Rasoulof"]]},
+  {id:"doc",n:"Documentary Feature",g:"feat",m:[
+    ["nootherland","","Basel Adra, Rachel Szor, Hamdan Ballal, Yuval Abraham",1],["blackbox","","Shiori Itō, Eric Nyari, Hanna Aqvilin"],["porcelain","","Brendan Bellomo, Slava Leontyev, Aniela Sidorska, Paula DuPré Pesmen"],["soundtrack","","Johan Grimonprez, Daan Milius, Rémi Grellety"],["sugarcane","","Julian Brave NoiseCat, Emily Kassie, Kellen Quinn"]]},
+  {id:"cin",n:"Cinematography",g:"craft",m:[
+    ["brutalist","","Lol Crawley",1],["dune2","","Greig Fraser"],["emilia","","Paul Guilhaume"],["maria","","Edward Lachman"],["nosferatu","","Jarin Blaschke"]]},
+  {id:"edi",n:"Film Editing",g:"craft",m:[
+    ["anora","","Sean Baker",1],["brutalist","","Dávid Jancsó"],["conclave","","Nick Emerson"],["emilia","","Juliette Welfling"],["wicked","","Myron Kerstein"]]},
+  {id:"pro",n:"Production Design",g:"craft",m:[
+    ["wicked","","Nathan Crowley; set decoration Lee Sandales",1],["brutalist","","Judy Becker; set decoration Patricia Cuccia"],["conclave","","Suzie Davies; set decoration Cynthia Sleiter"],["dune2","","Patrice Vermette; set decoration Shane Vieau"],["nosferatu","","Craig Lathrop; set decoration Beatrice Brentnerová"]]},
+  {id:"cos",n:"Costume Design",g:"craft",m:[
+    ["wicked","","Paul Tazewell",1],["unknown","","Arianne Phillips"],["conclave","","Lisy Christl"],["gladiator2","","Janty Yates, Dave Crossman"],["nosferatu","","Linda Muir"]]},
+  {id:"mak",n:"Makeup and Hairstyling",g:"craft",m:[
+    ["substance","","Pierre-Olivier Persin, Stéphanie Guillon, Marilyne Scarselli",1],["differentman","","Mike Marino, David Presto, Crystal Jurado"],["emilia","","Julia Floch Carbonel, Emmanuel Janvier, Jean-Christophe Spadaccini"],["nosferatu","","David White, Traci Loader, Suzanne Stokes-Munton"],["wicked","","Frances Hannon, Laura Blount, Sarah Nuth"]]},
+  {id:"snd",n:"Sound",g:"craft",m:[
+    ["dune2","","Gareth John, Richard King, Ron Bartlett, Doug Hemphill",1],["unknown","","Tod A. Maitland, Donald Sylvester, Ted Caplan, Paul Massey, David Giammarco"],["emilia","","Erwan Kerzanet, Aymeric Devoldère, Maxence Dussère, Cyril Holtz, Niels Barletta"],["wicked","","Simon Hayes, Nancy Nugent Title, Jack Dolman, Andy Nelson, John Marquis"],["wildrobot","","Randy Thom, Brian Chumney, Gary A. Rizzo, Leff Lefferts"]]},
+  {id:"vfx",n:"Visual Effects",g:"craft",m:[
+    ["dune2","","Paul Lambert, Stephen James, Rhys Salcombe, Gerd Nefzer",1],["alien","","Eric Barba, Nelson Sepulveda-Fauser, Daniel Macarin, Shane Mahan"],["betterman","","Luke Millar, David Clayton, Keith Herft, Peter Stubbs"],["apes","","Erik Winquist, Stephen Unterfranz, Paul Story, Rodney Burke"],["wicked","","Pablo Helman, Jonathan Fawkner, David Shirk, Paul Corbould"]]},
+  {id:"sco",n:"Original Score",g:"craft",m:[
+    ["brutalist","","Daniel Blumberg",1],["conclave","","Volker Bertelmann"],["emilia","","Clément Ducol, Camille"],["wicked","","John Powell, Stephen Schwartz"],["wildrobot","","Kris Bowers"]]},
+  {id:"son",n:"Original Song",g:"craft",m:[
+    ["emilia","“El Mal”","Clément Ducol, Camille, Jacques Audiard",1],["sixtriple","“The Journey”","Diane Warren"],["singsing","“Like a Bird”","Abraham Alexander, Adrian Quesada"],["emilia","“Mi Camino”","Camille, Clément Ducol"],["eltonjohn","“Never Too Late”","Elton John, Brandi Carlile, Andrew Watt, Bernie Taupin"]]},
+  {id:"dsh",n:"Documentary Short",g:"short",m:[
+    ["orchestra","","Molly O'Brien, Lisa Remington",1],["deathnums","","Kim A. Snyder, Janique L. Robillard"],["warden","","Smriti Mundhra, Maya Gnyp"],["incident","","Bill Morrison, Jamie Kalven"],["instruments","","Ema Ryan Yamazaki, Eric Nyari"]]},
+  {id:"lsh",n:"Live Action Short",g:"short",m:[
+    ["robot","","Victoria Warmerdam, Trent",1],["alienshort","","Sam Cutler-Kreutz, David Cutler-Kreutz"],["anuja","","Adam J. Graves, Suchitra Mattai"],["lastranger","","Cindy Lee, Darwin Shaw"],["silent","","Nebojša Slijepčević, Danijel Pek"]]},
+  {id:"ash",n:"Animated Short",g:"short",m:[
+    ["cypress","","Shirin Sohani, Hossein Molayemi",1],["beautifulmen","","Nicolas Keppens, Brecht Van Elslande"],["candies","","Daisuke Nishio, Takashi Washio"],["wander","","Nina Gantz, Stienette Bosklopper"],["yuck","","Loïc Espuche, Juliette Marquet"]]}
+];
+
+/* ---------- Data: 99th Academy Awards contenders (predictions, not nominees) ---------- */
+// r: Best Picture rank on the AwardsWatch ballot of Sept 17, 2026; dr: Best Director rank; tier: likely | alt | bubble
+const F99 = {
+  c_odyssey:{t:"The Odyssey",d:"Christopher Nolan",dist:"Universal",k:"feature",h:205,r:1,dr:1,tier:"likely",l:"Christopher Nolan's adaptation of Homer's epic, with Matt Damon as Odysseus."},
+  c_bola:{t:"La Bola Negra",d:"Javier Calvo, Javier Ambrossi",dist:"Netflix",k:"feature",h:350,r:2,dr:2,tier:"likely"},
+  c_horse:{t:"Wild Horse Nine",d:"Martin McDonagh",dist:"Searchlight",k:"feature",h:30,r:3,dr:3,tier:"likely",l:"John Malkovich is tipped for Best Actor."},
+  c_fjord:{t:"Fjord",d:"Cristian Mungiu",dist:"NEON",k:"feature",h:200,r:4,dr:4,tier:"likely"},
+  c_dune3:{t:"Dune: Part Three",d:"Denis Villeneuve",dist:"Warner Bros.",k:"feature",h:36,r:5,dr:10,tier:"likely",fam:"teens",l:"The end of Villeneuve's Dune saga. Opens in December."},
+  c_debut:{t:"The Debut",d:"Jesse Eisenberg",dist:"A24",k:"feature",h:320,r:6,tier:"likely",l:"Julianne Moore is an early Best Actress pick."},
+  c_invite:{t:"The Invite",d:"Olivia Wilde",dist:"A24",k:"feature",h:12,r:7,dr:6,tier:"likely"},
+  c_sudden:{t:"All of a Sudden",d:"Ryusuke Hamaguchi",dist:"NEON",k:"feature",h:180,r:8,dr:5,tier:"likely"},
+  c_hailmary:{t:"Project Hail Mary",d:"Phil Lord, Christopher Miller",dist:"Amazon MGM",k:"feature",h:44,r:9,tier:"likely",fam:"teens",l:"Ryan Gosling as a science teacher who wakes up alone on a spaceship, from Andy Weir's novel."},
+  c_elsinore:{t:"Elsinore",d:"",dist:"Focus Features",k:"feature",h:240,r:10,tier:"likely",l:"Andrew Scott is in the Best Actor conversation."},
+  c_michael:{t:"Michael",d:"Antoine Fuqua",dist:"Lionsgate",k:"feature",h:280,r:11,tier:"alt",l:"The Michael Jackson biopic, starring his nephew Jaafar Jackson."},
+  c_clubkid:{t:"Club Kid",d:"",dist:"A24",k:"feature",h:300,r:12,tier:"alt"},
+  c_sense:{t:"Sense and Sensibility",d:"Georgia Oakley",dist:"Focus Features",k:"feature",h:110,r:13,dr:9,tier:"alt",l:"A new adaptation of Jane Austen's novel."},
+  c_behemoth:{t:"Behemoth!",d:"Tony Gilroy",dist:"Searchlight",k:"feature",h:16,r:14,dr:8,tier:"alt"},
+  c_obsession:{t:"Obsession",d:"Curry Barker",dist:"Focus Features",k:"feature",h:268,r:15,tier:"alt",l:"A horror breakout that has climbed into the Best Picture conversation."},
+  c_fatherland:{t:"Fatherland",d:"Paweł Pawlikowski",k:"feature",h:220,dr:7,tier:"bubble"},
+  c_digger:{t:"Digger",d:"",k:"feature",h:24,tier:"bubble",l:"Tom Cruise is a leading Best Actor contender. Early reactions have been divided."},
+  c_rocky:{t:"I Play Rocky",d:"",k:"feature",h:4,tier:"bubble"}
+};
+const C99 = [];
+
+const SEASONS = {
+  "97": { n: "97th", eyebrow: "97th Academy Awards · films of 2024", lede: "Every film nominated at the March 2, 2025 ceremony, the year Anora took Best Picture.", films: F97, cats: C97,
+          foot: "Nominees and winners from the 97th Academy Awards (announced January 23, 2025; awarded March 2, 2025)." },
+  "98": { n: "98th", eyebrow: "98th Academy Awards · films of 2025", lede: "Every film nominated at the March 15, 2026 ceremony. Tick off what you've seen, rate it, and see how your picks line up with the Academy's.", films: F98, cats: C98,
+          foot: "Nominees and winners from the 98th Academy Awards (announced January 22, 2026; awarded March 15, 2026). Two films tied for Live Action Short." },
+  "99": { n: "99th", eyebrow: "99th Academy Awards · films of 2026", lede: "Nominations land January 21, 2027. Until then, these are the films most likely to be in the running.", films: F99, cats: C99,
+          foot: "Contenders are predictions, not nominees. Rankings from the AwardsWatch Best Picture and Best Director ballot of September 17, 2026, plus bubble films from Gold Derby's October odds. Ask Claude to swap in the real nominees on January 21, 2027." }
+};
+
+const NEXT = [
+  ["2026-11-15","Governors Awards"],["2026-12-07","Preliminary voting opens"],["2026-12-11","Preliminary voting closes"],
+  ["2027-01-11","Nominations voting opens"],["2027-01-15","Nominations voting closes"],["2027-01-21","Nominations announced"],
+  ["2027-02-25","Final voting opens"],["2027-03-04","Final voting closes"],["2027-03-14","99th Oscars, hosted by Conan O'Brien (ABC and Hulu)"]
+];
+
+/* ---------- Derived indexes (film ids are unique across ceremonies) ---------- */
+const FILMS = {}, NOMS = {};
+Object.entries(SEASONS).forEach(([y, s]) => {
+  Object.entries(s.films).forEach(([id, f]) => { FILMS[id] = Object.assign({ y }, f); });
+  s.cats.forEach(c => c.m.forEach((m, i) => { (NOMS[m[0]] ||= []).push({ c, m, i }); }));
+});
+let cer = "98", CATS = C98, FID = Object.keys(F98);
+const winsOf = f => (NOMS[f] || []).filter(x => x.m[3]).length;
+const nomsOf = f => (NOMS[f] || []).length;
+const catFilms = c => [...new Set(c.m.map(m => m[0]))];
+
+/* ---------- State + storage ---------- */
+// S.w[filmId] = {s: seen, r: rating 1-5, n: note, d: date seen}; S.p[ceremony][catId] = nominee index; S.x = own contenders
+let S = { w: {}, p: {}, x: [] };
+const LS = "oscar-ledger-98";
+function norm(o) {
+  o = o && typeof o === "object" ? o : {};
+  let p = o.p && typeof o.p === "object" ? o.p : {};
+  if (Object.keys(p).some(k => !SEASONS[k])) p = { "98": p }; // first version stored 98th picks flat
+  return { w: o.w || {}, p, x: Array.isArray(o.x) ? o.x : [] };
+}
+try { S = norm(JSON.parse(localStorage.getItem(LS) || "null")); } catch (e) {}
+const picks = () => (S.p[cer] ||= {});
+
+let ref = null, timer = null, writing = false, again = false, dirty = false;
+const syncEl = document.getElementById("sync");
+function save() {
+  dirty = true;
+  try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {}
+  if (!ref) return;
+  clearTimeout(timer);
+  syncEl.textContent = "Saving…";
+  timer = setTimeout(flush, 700);
+}
+async function flush() {
+  if (writing) { again = true; return; }
+  writing = true;
+  try { await ref.set(JSON.parse(JSON.stringify(S))); syncEl.textContent = "Saved to your account"; }
+  catch (e) { syncEl.textContent = "Couldn't save online · kept on this device"; }
+  writing = false; dirty = false;
+  if (again) { again = false; flush(); }
+}
+(async function connect() {
+  try {
+    const c = window.claude;
+    if (!c || !c.use) return;
+    const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    ref = db.doc("data/users/" + id + "/state");
+    let first = true;
+    ref.onSnapshot(snap => {
+      if (snap.metadata.hasPendingWrites || dirty || writing) return;
+      if (snap.exists) { S = norm(JSON.parse(JSON.stringify(snap.data()))); renderAll(); }
+      else if (first && (Object.keys(S.w).length || Object.keys(S.p).length || S.x.length)) { flush(); } // carry device progress up
+      first = false;
+      syncEl.textContent = "Saved to your account";
+    }, () => { syncEl.textContent = "Saved on this device"; });
+  } catch (e) {}
+})();
+
+const seen = f => !!(S.w[f] && S.w[f].s);
+function setFilm(f, patch) {
+  const cur = S.w[f] || {};
+  const next = Object.assign({}, cur, patch);
+  if (patch.s && !cur.s) next.d = new Date().toISOString().slice(0, 10);
+  S.w[f] = next;
+  save();
+}
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+const STATUE = '<svg viewBox="0 0 10 24" aria-hidden="true" fill="currentColor"><circle cx="5" cy="2.8" r="2.2"/><path d="M3 5.6h4l-.7 10H3.7z"/><rect x="2.2" y="16.2" width="5.6" height="2.2"/><rect x="1" y="19" width="8" height="5" rx=".5"/></svg>';
+const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const KIND = { feature: "", animated: "Animated", doc: "Documentary", short: "Short" };
+const famLabel = { family: "Family night", teens: "Older kids" };
+const TIER = { likely: "Likely nominee", alt: "On the edge", bubble: "Dark horse" };
+const today = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
+const daysTo = s => Math.round((new Date(s + "T00:00:00") - today) / 864e5);
+
+/* ---------- Tally ---------- */
+function renderTally() {
+  const pct = (a, b) => Math.round(100 * a / b) + "%";
+  let rows;
+  if (cer === "99") {
+    const ids = Object.keys(F99), likely = ids.filter(f => F99[f].tier === "likely");
+    rows = [[likely.filter(seen).length, likely.length, "Likely nominees seen"], [ids.filter(seen).length, ids.length, "All contenders seen"]];
+    $("tally").innerHTML = rows.map(([a, b, l]) => `<div><b>${a}<small> / ${b}</small></b><div class="meter"><i style="width:${pct(a, b)}"></i></div><span>${l}</span></div>`).join("")
+      + `<div><b>${Math.max(daysTo("2027-01-21"), 0)}</b><div class="meter"><i style="width:0"></i></div><span>Days to nominations</span></div>`;
+    return;
+  }
+  const feats = FID.filter(f => FILMS[f].k !== "short");
+  const bp = CATS[0].m.map(m => m[0]);
+  const done = CATS.filter(c => catFilms(c).every(seen)).length;
+  rows = [[feats.filter(seen).length, feats.length, "Features seen"], [bp.filter(seen).length, bp.length, "Best Picture"], [done, CATS.length, "Categories complete"]];
+  $("tally").innerHTML = rows.map(([a, b, l]) => `<div><b>${a}<small> / ${b}</small></b><div class="meter"><i style="width:${pct(a, b)}"></i></div><span>${l}</span></div>`).join("");
+}
+
+/* ---------- Films ---------- */
+const FILTERS = [
+  ["all", "All", f => true],
+  ["bp", "Best Picture", f => CATS[0].m.some(m => m[0] === f)],
+  ["todo", "To watch", f => !seen(f)],
+  ["seen", "Seen", f => seen(f)],
+  ["won", "Winners", f => winsOf(f) > 0],
+  ["fam", "Family night", f => !!FILMS[f].fam],
+  ["doc", "Documentaries", f => FILMS[f].k === "doc"],
+  ["short", "Shorts", f => FILMS[f].k === "short"]
+];
+let ui = { filter: "all", q: "", sort: "noms", catf: "all", reveal: {}, view: "films", cer: "98" };
+try { Object.assign(ui, JSON.parse(localStorage.getItem(LS + "-ui") || "{}")); } catch (e) {}
+if (typeof ui.reveal !== "object" || !ui.reveal) ui.reveal = {};
+const saveUi = () => { try { localStorage.setItem(LS + "-ui", JSON.stringify(ui)); } catch (e) {} };
+
+function renderFilters() {
+  $("filters").innerHTML = FILTERS.map(([id, label, fn]) =>
+    `<button class="chip" data-f="${id}" aria-pressed="${ui.filter === id}">${label}<span class="n">${FID.filter(fn).length}</span></button>`).join("");
+}
+function haystack(f) {
+  const F = FILMS[f];
+  return (F.t + " " + (F.d || "") + " " + (NOMS[f] || []).map(x => x.m[1] + " " + x.m[2]).join(" ")).toLowerCase();
+}
+function renderWall() {
+  const fn = FILTERS.find(x => x[0] === ui.filter)[2];
+  const q = ui.q.trim().toLowerCase();
+  let list = FID.filter(fn).filter(f => !q || haystack(f).includes(q));
+  const shortLast = (a, b) => (FILMS[a].k === "short") - (FILMS[b].k === "short");
+  const by = {
+    noms: (a, b) => shortLast(a, b) || nomsOf(b) - nomsOf(a) || winsOf(b) - winsOf(a) || FILMS[a].t.localeCompare(FILMS[b].t),
+    wins: (a, b) => winsOf(b) - winsOf(a) || nomsOf(b) - nomsOf(a),
+    az: (a, b) => FILMS[a].t.replace(/^(The|A) /, "").localeCompare(FILMS[b].t.replace(/^(The|A) /, "")),
+    rating: (a, b) => ((S.w[b] || {}).r || 0) - ((S.w[a] || {}).r || 0) || nomsOf(b) - nomsOf(a)
+  };
+  list.sort(by[ui.sort]);
+  $("wall").innerHTML = list.length ? list.map(f => {
+    const F = FILMS[f], n = nomsOf(f), w = winsOf(f), st = S.w[f] || {};
+    return `<button class="poster${st.s ? " seen" : ""}" style="--h:${F.h}" data-film="${f}" aria-label="${esc(F.t)}, ${n} nomination${n > 1 ? "s" : ""}, ${w} win${w === 1 ? "" : "s"}${st.s ? ", seen" : ""}">
+      <span class="count">${n} nomination${n > 1 ? "s" : ""}</span>
+      ${KIND[F.k] ? `<span class="kind">${KIND[F.k]}</span>` : ""}
+      ${st.s ? `<span class="stamp">Seen${st.r ? " " + "★".repeat(st.r) : ""}</span>` : ""}
+      <span class="t">${esc(F.t)}</span>
+      ${F.d ? `<span class="d">${esc(F.d)}</span>` : ""}
+      <span class="wins">${STATUE.repeat(w)}</span>
+    </button>`;
+  }).join("") : `<p class="empty">No films match. Try another filter or clear the search.</p>`;
+}
+function renderUpNext() {
+  // Rank unseen features: nominations + bonus for categories this film would finish
+  const cand = FID.filter(f => FILMS[f].k !== "short" && !seen(f)).map(f => {
+    const finishes = CATS.filter(c => { const u = catFilms(c).filter(x => !seen(x)); return u.length === 1 && u[0] === f; }).length;
+    return { f, score: nomsOf(f) + finishes * 3, finishes };
+  }).sort((a, b) => b.score - a.score).slice(0, 4);
+  if (!cand.length) { $("upnext").innerHTML = `<h2>You've seen every feature.</h2><div class="picks">Time for the shorts, or another ceremony.</div>`; return; }
+  $("upnext").innerHTML = `<h2>Watch next</h2><div class="picks">${cand.map(c =>
+    `<button data-film="${c.f}">${esc(FILMS[c.f].t)}<em>${c.finishes ? "finishes " + c.finishes + " categor" + (c.finishes > 1 ? "ies" : "y") : nomsOf(c.f) + " noms"}</em></button>`).join("")}</div>`;
+}
+
+/* ---------- Categories ---------- */
+const CATG = [["all", "All 24"], ["top", "Picture, directing, writing"], ["act", "Acting"], ["feat", "Feature types"], ["craft", "Craft"], ["short", "Shorts"]];
+function nomHead(m) { return m[1] ? esc(m[1]) : esc(FILMS[m[0]].t); }
+function renderCats() {
+  $("catfilters").innerHTML = CATG.map(([id, l]) => `<button class="chip" data-cf="${id}" aria-pressed="${ui.catf === id}">${id === "all" ? "All " + CATS.length : l}</button>`).join("");
+  const list = CATS.filter(c => ui.catf === "all" || c.g === ui.catf);
+  $("cats").innerHTML = list.map(c => {
+    const fs = catFilms(c), k = fs.filter(seen).length, done = k === fs.length;
+    return `<article class="cat${done ? " done" : ""}">
+      <header><h3>${c.n}</h3><span class="prog">${done ? "All seen" : k + " of " + fs.length + " seen"}</span></header>
+      ${c.m.map(m => `<div class="nom${m[3] ? " win" : ""}">
+        <button class="tick${seen(m[0]) ? " on" : ""}" data-tick="${m[0]}" aria-pressed="${seen(m[0])}" aria-label="Mark ${esc(FILMS[m[0]].t)} as ${seen(m[0]) ? "not seen" : "seen"}">${CHECK}</button>
+        <div><div class="who">${m[1] ? esc(m[1]) : `<button class="film-link" data-film="${m[0]}">${esc(FILMS[m[0]].t)}</button>`}</div>
+        <div class="cr">${m[1] ? `<button class="film-link" data-film="${m[0]}" style="font-weight:500;color:inherit">${esc(FILMS[m[0]].t)}</button> · ` : ""}${esc(m[2])}</div></div>
+      </div>`).join("")}
+    </article>`;
+  }).join("");
+}
+
+/* ---------- Ballot ---------- */
+function renderBallot() {
+  const P = picks(), rev = !!ui.reveal[cer];
+  const picked = CATS.filter(c => P[c.id] !== undefined).length;
+  const agree = CATS.filter(c => P[c.id] !== undefined && c.m[P[c.id]] && c.m[P[c.id]][3]).length;
+  $("ballotbar").innerHTML = `<div><div class="score mono">${rev ? agree + " / " + picked + " agreed" : picked + " / " + CATS.length + " picked"}</div>
+    <p>Pick who you think deserved each Oscar. Reveal the envelopes to see where you and the Academy agree.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="reveal">${rev ? "Hide winners" : "Open the envelopes"}</button>
+    ${picked ? `<button class="btn ghost" id="clearpicks">Clear picks</button>` : ""}</div>`;
+  $("ballot").innerHTML = CATS.map(c => {
+    const p = P[c.id], ok = rev && p !== undefined && c.m[p] && c.m[p][3];
+    return `<article class="cat${ok ? " agree" : ""}"><header><h3>${c.n}</h3><span class="prog">${p === undefined ? "No pick" : "Picked"}</span></header>
+      <div role="radiogroup" aria-label="${c.n}">${c.m.map((m, i) => `<button class="pick${rev && m[3] ? " won" : ""}" role="radio" aria-checked="${p === i}" data-cat="${c.id}" data-i="${i}">
+        <span class="radio"></span><span><span class="who">${nomHead(m)}${rev && m[3] ? (p === i ? '<span class="tag ok">YOU AGREED</span>' : '<span class="tag ac">WINNER</span>') : ""}</span>
+        <span class="cr" style="display:block">${m[1] ? esc(FILMS[m[0]].t) : esc(m[2])}${seen(m[0]) ? " · seen" : ""}</span></span></button>`).join("")}</div></article>`;
+  }).join("");
+}
+
+/* ---------- 99th: contenders + countdown ---------- */
+function renderNext() {
+  const nomD = daysTo("2027-01-21"), cerD = daysTo("2027-03-14");
+  const nextIdx = NEXT.findIndex(([d]) => daysTo(d) >= 0);
+  $("countdown").innerHTML = `<div class="eyebrow">Road to March 14, 2027</div>
+    <h2 style="margin-top:8px">The next envelopes</h2>
+    <p>On January 21, ask Claude to load the real nominees. This list becomes a full season like the 97th and 98th.</p>
+    <div class="count-row">
+      <div><b>${Math.max(nomD, 0)}</b><span>days to nominations</span></div>
+      <div><b>${Math.max(cerD, 0)}</b><span>days to the ceremony</span></div>
+    </div>
+    <ol class="timeline">${NEXT.map(([d, e], i) => `<li class="${daysTo(d) < 0 ? "past" : i === nextIdx ? "next-up" : ""}">
+      <span class="mono">${new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span><span>${esc(e)}</span></li>`).join("")}</ol>`;
+  const order = Object.keys(F99).sort((a, b) => (F99[a].r || 99) - (F99[b].r || 99) || (F99[a].dr || 99) - (F99[b].dr || 99));
+  $("contenders").innerHTML = order.map(f => {
+    const F = F99[f], sn = seen(f);
+    const by = [F.d, F.dist].filter(Boolean).join(" · ");
+    return `<div class="crow${sn ? " seen" : ""}">
+      <button class="tick${sn ? " on" : ""}" data-tick="${f}" aria-pressed="${sn}" aria-label="Mark ${esc(F.t)} as ${sn ? "not seen" : "seen"}">${CHECK}</button>
+      <span class="rk">${F.r ? "#" + F.r : "–"}</span>
+      <div><button class="film-link" data-film="${f}">${esc(F.t)}</button>${by ? `<div class="cr">${esc(by)}</div>` : ""}</div>
+      <span class="tier ${F.tier}">${TIER[F.tier]}</span></div>`;
+  }).join("");
+  $("mine").innerHTML = S.x.length ? S.x.map((x, i) => `<div class="contender${x.s ? " seen" : ""}">
+      <button class="tick${x.s ? " on" : ""}" data-ctick="${i}" aria-pressed="${!!x.s}" aria-label="Mark ${esc(x.t)} as seen">${CHECK}</button>
+      <span>${esc(x.t)}</span><button class="x" data-cdel="${i}" aria-label="Remove ${esc(x.t)}">×</button></div>`).join("")
+    : `<p class="cr" style="color:var(--muted);margin:0">Heard buzz about something not on the list? Add it here.</p>`;
+}
+
+/* ---------- Film sheet ---------- */
+const sheet = $("sheet");
+let sheetFilm = null;
+function openSheet(f) {
+  sheetFilm = f;
+  const F = FILMS[f], st = S.w[f] || {}, n = nomsOf(f), w = winsOf(f);
+  const q = encodeURIComponent(F.t);
+  const isC = F.y === "99";
+  const badge = isC ? `<span class="badge">${TIER[F.tier]}</span>` : `<span class="badge">${SEASONS[F.y].n}</span><span class="badge">${n} nom${n > 1 ? "s" : ""} · ${w} win${w === 1 ? "" : "s"}</span>`;
+  const pred = isC ? [F.r ? `Best Picture: predicted #${F.r}` : "", F.dr ? `Best Director: predicted #${F.dr} (${esc(F.d)})` : "", !F.r && !F.dr ? "Gold Derby lists it among the films competing for the last Best Picture spots" : ""].filter(Boolean) : [];
+  sheet.innerHTML = `<div class="sheet-hero" style="--h:${F.h}">
+      <button class="close" data-close aria-label="Close">×</button>
+      <div>${badge}${KIND[F.k] ? `<span class="badge">${KIND[F.k]}</span>` : ""}${F.fam ? `<span class="badge">${famLabel[F.fam]}</span>` : ""}</div>
+      <h2 id="sheet-title">${esc(F.t)}</h2>
+      ${F.d || F.dist ? `<div class="meta">${F.d ? (F.k === "short" ? "" : "Directed by ") + esc(F.d) : ""}${F.d && F.dist ? " · " : ""}${F.dist ? esc(F.dist) : ""}</div>` : ""}
+    </div>
+    <div class="sheet-body">
+      ${F.l ? `<p class="log">${esc(F.l)}</p>` : ""}
+      <div class="watch-row">
+        <button class="seen-btn" id="seenbtn" aria-pressed="${!!st.s}">${st.s ? "Seen" + (st.d ? " · " + new Date(st.d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "") : "Mark as seen"}</button>
+        <div class="stars" role="group" aria-label="Your rating">${[1, 2, 3, 4, 5].map(i => `<button data-star="${i}" class="${(st.r || 0) >= i ? "on" : ""}" aria-label="${i} star${i > 1 ? "s" : ""}" aria-pressed="${st.r === i}">★</button>`).join("")}</div>
+      </div>
+      <div><label for="note">Your notes</label><textarea id="note" placeholder="Who you watched with, what stuck with you…">${esc(st.n || "")}</textarea></div>
+      ${isC ? `<div><label>Where it stands</label><div class="sheet-noms">${pred.map(p => `<div><span>${p}<small>Prediction as of fall 2026, not a nomination</small></span></div>`).join("")}</div></div>`
+            : `<div><label>Nominations</label><div class="sheet-noms">${NOMS[f].map(x => `<div><span>${esc(x.c.n)}<small>${x.m[1] ? esc(x.m[1]) + " " : ""}${esc(x.m[2])}</small></span>${x.m[3] ? '<span class="w">WON</span>' : ""}</div>`).join("")}</div></div>`}
+      <div class="links"><a href="https://www.justwatch.com/us/search?q=${q}" target="_blank" rel="noopener">Where to watch ↗</a><a href="https://letterboxd.com/search/films/${q}/" target="_blank" rel="noopener">Letterboxd ↗</a></div>
+    </div>`;
+  if (!sheet.open) sheet.showModal();
+}
+sheet.addEventListener("click", e => {
+  if (e.target === sheet || e.target.closest("[data-close]")) { sheet.close(); return; }
+  const f = sheetFilm; if (!f) return;
+  if (e.target.closest("#seenbtn")) { setFilm(f, { s: !seen(f) }); openSheet(f); renderAll(true); }
+  const star = e.target.closest("[data-star]");
+  if (star) { const r = +star.dataset.star; setFilm(f, { r: (S.w[f] || {}).r === r ? 0 : r, s: true }); openSheet(f); renderAll(true); }
+});
+sheet.addEventListener("input", e => {
+  if (e.target.id === "note" && sheetFilm) { setFilm(sheetFilm, { n: e.target.value.slice(0, 2000) }); }
+});
+sheet.addEventListener("close", () => { sheetFilm = null; });
+
+/* ---------- Wiring ---------- */
+function renderAll(keepSheet) {
+  renderTally();
+  if (cer === "99") renderNext();
+  else { renderFilters(); renderUpNext(); renderWall(); renderCats(); renderBallot(); }
+  if (!keepSheet && sheetFilm && sheet.open && document.activeElement?.id !== "note") openSheet(sheetFilm);
+}
+function show(view) {
+  if (cer === "99") view = "next";
+  else if (view === "next") view = "films";
+  ui.view = view; saveUi();
+  document.querySelectorAll("nav.tabs [data-view]").forEach(b => { b.setAttribute("aria-selected", b.dataset.view === view); b.hidden = (cer === "99") !== (b.dataset.view === "next"); });
+  document.querySelectorAll("section.view").forEach(s => s.hidden = s.id !== "view-" + view);
+}
+function setSeason(y, view) {
+  cer = SEASONS[y] ? y : "98"; ui.cer = cer;
+  CATS = SEASONS[cer].cats; FID = Object.keys(SEASONS[cer].films);
+  document.querySelectorAll("[data-season]").forEach(b => b.setAttribute("aria-pressed", b.dataset.season === cer));
+  $("eyebrow").textContent = SEASONS[cer].eyebrow;
+  $("lede").textContent = SEASONS[cer].lede;
+  $("footnote").textContent = SEASONS[cer].foot + " Streaming links open JustWatch and Letterboxd searches.";
+  renderAll();
+  show(view || (cer === "99" ? "next" : ui.view));
+}
+document.querySelector("nav.tabs").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
+$("seasons").addEventListener("click", e => { const b = e.target.closest("[data-season]"); if (b) setSeason(b.dataset.season); });
+document.addEventListener("click", e => {
+  if (e.target.closest("dialog")) return;
+  const film = e.target.closest("[data-film]"); if (film) { openSheet(film.dataset.film); return; }
+  const fc = e.target.closest("[data-f]"); if (fc) { ui.filter = fc.dataset.f; saveUi(); renderFilters(); renderWall(); return; }
+  const cf = e.target.closest("[data-cf]"); if (cf) { ui.catf = cf.dataset.cf; saveUi(); renderCats(); return; }
+  const tk = e.target.closest("[data-tick]"); if (tk) { setFilm(tk.dataset.tick, { s: !seen(tk.dataset.tick) }); renderAll(); return; }
+  const pk = e.target.closest("[data-cat]"); if (pk) { const P = picks(), c = pk.dataset.cat, i = +pk.dataset.i; if (P[c] === i) delete P[c]; else P[c] = i; save(); renderBallot(); return; }
+  if (e.target.closest("#reveal")) { ui.reveal[cer] = !ui.reveal[cer]; saveUi(); renderBallot(); return; }
+  if (e.target.closest("#clearpicks")) { const b = e.target.closest("#clearpicks"); if (b.dataset.confirm) { S.p[cer] = {}; save(); renderBallot(); } else { b.dataset.confirm = 1; b.textContent = "Tap again to clear"; } return; }
+  const ct = e.target.closest("[data-ctick]"); if (ct) { const x = S.x[+ct.dataset.ctick]; x.s = !x.s; save(); renderNext(); return; }
+  const cd = e.target.closest("[data-cdel]"); if (cd) { S.x.splice(+cd.dataset.cdel, 1); save(); renderNext(); return; }
+});
+$("addform").addEventListener("submit", e => {
+  e.preventDefault();
+  const t = $("addtitle").value.trim(); if (!t) return;
+  S.x.unshift({ t: t.slice(0, 80), s: false }); $("addtitle").value = ""; save(); renderNext(); renderTally();
+});
+$("q").value = ui.q;
+$("q").addEventListener("input", e => { ui.q = e.target.value; renderWall(); });
+$("sort").value = ui.sort;
+$("sort").addEventListener("change", e => { ui.sort = e.target.value; saveUi(); renderWall(); });
+
+const hash = location.hash.slice(1);
+setSeason(["97", "98", "99"].includes(hash) ? hash : hash === "next" ? "99" : ui.cer, ["cats", "ballot", "films"].includes(hash) ? hash : null);
+</script>
